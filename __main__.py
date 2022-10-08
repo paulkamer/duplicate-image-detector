@@ -1,5 +1,6 @@
 import argparse
 import logging
+import os
 from configparser import ConfigParser
 
 from src import app
@@ -35,10 +36,10 @@ if __name__ == "__main__":
     }
 
     level = logging.DEBUG if options['debug'] == True else logging.WARN
-    logging.basicConfig(encoding='utf-8', level=level)
+    logging.basicConfig(level=level)
 
     config = ConfigParser()
-    config.read('config.ini')
+    config.read(os.path.join(os.path.dirname(__file__), 'config.ini'))
 
     options['config'] = config
 
