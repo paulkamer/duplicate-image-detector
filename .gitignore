@@ -1,6 +1,10 @@
 __pycache__/
 
-images
+images/*
+!images/.gitkeep
+
+.coverage
 
 venv
 private
+.vscode

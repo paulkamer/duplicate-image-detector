@@ -1,0 +1,2 @@
+
+from .sift import SiftDuplicateDetector
