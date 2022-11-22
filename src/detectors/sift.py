@@ -23,7 +23,7 @@ class SiftDuplicateDetector:
 
         for image in self._computed_images.keys():
             filename = os.path.basename(image)
-            logging.debug(f"Finding duplicates for {filename}...")
+            logging.debug(f"Checking duplicates for {filename}...")
 
             self.find_duplicates(filename, bfMatcher)
 
