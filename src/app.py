@@ -4,7 +4,7 @@ import os
 import re
 import shutil
 from pathlib import Path
-from src.detectors import SiftDuplicateDetector
+from .detectors import SiftDuplicateDetector
 
 
 def app(**options: dict):
@@ -32,7 +32,7 @@ def app(**options: dict):
 def _load_images(config: dict) -> list:
     images = []
 
-    filepath_ignore_regex = re.compile('\.gitkeep')
+    filepath_ignore_regex = re.compile(r'\.gitkeep')
 
     for file in Path(config['paths']['images_dir']).iterdir():
         if not file.is_file():
