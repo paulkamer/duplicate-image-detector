@@ -17,14 +17,15 @@ Source: https://stackoverflow.com/a/53402396
 
 ## Unit tests
 ```
-python -m unittest discover -v -s ./tests
+python3 -m unittest discover -v -s ./tests
 ```
 
 ### Coverage
 
 - Run coverage scan
   ```
-  python -m coverage run -m unittest discover -s ./tests
+  python3 -m coverage --source=src/ run -m unittest discover -s ./tests
+  python3 -m coverage run -m unittest discover -s ./tests
   ```
 - View coverage report
   ```
@@ -33,8 +34,7 @@ python -m unittest discover -v -s ./tests
 
 
 ## TODO's: 
-- [ ] Use poetry for dependency management: https://python-poetry.org/
-- [ ] Add more docblocks
 - [ ] Add more tests
 - [ ] Improve type hinting 
-- [ ] Use "fire" for CLI app: https://towardsdatascience.com/a-simple-way-to-create-python-cli-app-1a4492c164b6
+- [ ] store keypoints, features in SQLite DB
+- [ ] extract relevant part; remove BG
