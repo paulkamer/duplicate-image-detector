@@ -4,7 +4,7 @@
 touch config.py
 touch config-3.py
 
-python -m coverage report
+python3 -m coverage report
 
 rm config.py
 rm config-3.py
