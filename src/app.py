@@ -8,6 +8,8 @@ from .detectors import SiftDuplicateDetector
 
 
 def app(**options: dict):
+    _init_logger(options)
+
     if (options.get('restore')):
         _restore_duplicates(options.get('config'))
 
@@ -27,6 +29,15 @@ def app(**options: dict):
 
         logging.info(f"Moving duplicates")
         _move_duplicates(options.get('config'), duplicates.keys())
+
+
+def _init_logger(options: dict):
+    log_level = logging.DEBUG if options['debug'] == True else logging.WARN
+
+    logging.basicConfig(level=log_level)
+
+    logging.info(
+        f"Logger initialized in mode {logging.getLevelName(log_level)}")
 
 
 def _load_images(config: dict) -> list:

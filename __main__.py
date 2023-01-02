@@ -1,6 +1,5 @@
-import argparse
-import logging
 import os
+import argparse
 from configparser import ConfigParser
 
 from src import app
@@ -28,19 +27,15 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
+    config = ConfigParser()
+
+    config.read(os.path.join(os.path.dirname(__file__), 'config.ini'))
 
     options = {
         'debug': args.debug,
         'render_comparison_images': args.render,
-        'restore': args.restore
+        'restore': args.restore,
+        'config': config,
     }
-
-    level = logging.DEBUG if options['debug'] == True else logging.WARN
-    logging.basicConfig(level=level)
-
-    config = ConfigParser()
-    config.read(os.path.join(os.path.dirname(__file__), 'config.ini'))
-
-    options['config'] = config
 
     app(**options)
