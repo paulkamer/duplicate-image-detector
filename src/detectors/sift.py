@@ -1,7 +1,7 @@
 import logging
 import os
 import cv2
-from .compage_image_renderers.sift import SiftCompareImageRenderer as ImageRenderer
+from .compare_image_renderers.sift import SiftCompareImageRenderer as ImageRenderer
 
 BF_MATCHES_NORM_TYPE = cv2.NORM_L1
 
