@@ -9,26 +9,26 @@ from .detectors import SiftDuplicateDetector
 
 def app(**options: dict):
     __init_logger(options)
+    config = options.get('config')
 
-    if (options.get('restore')):
-        __restore_duplicates(options.get('config'))
+    options.get('restore') and __restore_duplicates(config)
 
-    images = __load_images(options.get('config'))
+    new_images = __load_images(config['paths']['new_images_dir'], config)
+    existing_images = __load_images(config['paths']['images_dir'], config)
 
     duplicates = SiftDuplicateDetector(
-        images, **options).determine_duplicates()
+        new_images, existing_images, **options).detect()
+    logging.info(f"# duplicates found: {len(duplicates)}")
 
     if (duplicates):
-        logging.info(f"Total duplicates found: {len(duplicates)}")
+        __log_duplicates(duplicates)
 
-        for key in duplicates:
-            logging.info(key)
-            for duplicate in duplicates[key]:
-                logging.info(
-                    f"\t- {duplicate} - {len(duplicates[key][duplicate]['matches'])} matched descriptors")
+        if (options.get('remove')):
+            __delete_duplicates(config, duplicates.keys())
+        else:
+            __move_duplicates(config, duplicates.keys())
 
-        logging.info(f"Moving duplicates")
-        __move_duplicates(options.get('config'), duplicates.keys())
+    __store_new_unique_images(config)
 
 
 def __init_logger(options: dict):
@@ -40,12 +40,11 @@ def __init_logger(options: dict):
         f"Logger initialized in mode {logging.getLevelName(log_level)}")
 
 
-def __load_images(config: dict) -> list:
+def __load_images(folder: str, config: dict) -> list:
     images = []
 
     filepath_ignore_regex = re.compile(r'\.gitkeep')
-
-    for file in Path(config['paths']['images_dir']).iterdir():
+    for file in Path(folder).iterdir():
         if not file.is_file():
             continue
 
@@ -66,6 +65,14 @@ def __load_images(config: dict) -> list:
     return images
 
 
+def __log_duplicates(duplicates):
+    for key in duplicates:
+        logging.info(key)
+        for duplicate in duplicates[key]:
+            logging.info(
+                f"\t- {duplicate} - {len(duplicates[key][duplicate]['matches'])} matched descriptors")
+
+
 def __move_duplicates(config: dict, duplicates: list) -> None:
     """
     Move images detected as duplicate to a separate dir
@@ -75,24 +82,47 @@ def __move_duplicates(config: dict, duplicates: list) -> None:
     duplicates : list
         Duplicate images that should be moved to the duplicates dir
     """
+    logging.info(f"Moving duplicates")
+
     os.makedirs(config['paths']['duplicates_dir'], exist_ok=True)
 
     for duplicate in duplicates:
-        shutil.move(os.path.join(config['paths']['images_dir'], duplicate),
+        shutil.move(os.path.join(config['paths']['new_images_dir'], duplicate),
                     os.path.join(config['paths']['duplicates_dir'], duplicate))
+
+
+def __delete_duplicates(config: dict, duplicates: list) -> None:
+    """
+    Delete new images detected as a duplicate
+    """
+    for duplicate in duplicates:
+        os.remove(os.path.join(config['paths']['new_images_dir'], duplicate))
+
+
+def __store_new_unique_images(config: dict) -> None:
+    """
+    Move new unique images to the root images dir
+    """
+    target_dir = config['paths']['images_dir']
+    for file in Path(config['paths']['new_images_dir']).iterdir():
+        if not file.is_file():
+            continue
+
+        path = file.as_posix()
+        shutil.move(path, os.path.join(target_dir, os.path.basename(path)))
 
 
 def __restore_duplicates(config: dict):
     """
-    Move duplicates back to the images dir
+    Move duplicates back to the new images dir
     """
     if (not os.path.isdir(config['paths']['duplicates_dir'])):
         return
 
+    target_dir = config['paths']['new_images_dir']
     for file in Path(config['paths']['duplicates_dir']).iterdir():
         if not file.is_file():
             continue
 
         path = file.as_posix()
-        shutil.move(path, os.path.join(
-            config['paths']['images_dir'], os.path.basename(path)))
+        shutil.move(path, os.path.join(target_dir, os.path.basename(path)))

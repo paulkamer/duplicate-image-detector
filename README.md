@@ -16,19 +16,22 @@ Source: https://stackoverflow.com/a/53402396
 
 
 ## Unit tests
-```
+```sh
 python3 -m unittest discover -v -s ./tests
 ```
 
 ### Coverage
 
 - Run coverage scan
-  ```
+  ```sh
   python3 -m coverage --source=src/ run -m unittest discover -s ./tests
-  python3 -m coverage run -m unittest discover -s ./tests
+
+  # Omit compare image renderer used for debugging
+  python3 -m coverage run --source=src/ --omit=*/compare_image_renderers/* -m unittest discover -s ./tests 
   ```
+
 - View coverage report
-  ```
+  ```sh
   ./coverage_report.sh
   ```
 

@@ -25,6 +25,12 @@ if __name__ == "__main__":
         action='store_const',
         const=True
     )
+    parser.add_argument(
+        "--remove",
+        help="Remove detected duplicate images",
+        action='store_const',
+        const=True
+    )
 
     args = parser.parse_args()
     config = ConfigParser()
@@ -35,6 +41,7 @@ if __name__ == "__main__":
         'debug': args.debug,
         'render_comparison_images': args.render,
         'restore': args.restore,
+        'remove': args.remove,
         'config': config,
     }
 

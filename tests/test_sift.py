@@ -19,7 +19,7 @@ class TestSift(unittest.TestCase):
 
         options = {'config': config}
         result = SiftDuplicateDetector(
-            images=images, **options).determine_duplicates()
+            images=images, **options).detect()
 
         self.assertSetEqual(set(result), expected)
 
