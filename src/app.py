@@ -8,12 +8,12 @@ from .detectors import SiftDuplicateDetector
 
 
 def app(**options: dict):
-    _init_logger(options)
+    __init_logger(options)
 
     if (options.get('restore')):
-        _restore_duplicates(options.get('config'))
+        __restore_duplicates(options.get('config'))
 
-    images = _load_images(options.get('config'))
+    images = __load_images(options.get('config'))
 
     duplicates = SiftDuplicateDetector(
         images, **options).determine_duplicates()
@@ -28,10 +28,10 @@ def app(**options: dict):
                     f"\t- {duplicate} - {len(duplicates[key][duplicate]['matches'])} matched descriptors")
 
         logging.info(f"Moving duplicates")
-        _move_duplicates(options.get('config'), duplicates.keys())
+        __move_duplicates(options.get('config'), duplicates.keys())
 
 
-def _init_logger(options: dict):
+def __init_logger(options: dict):
     log_level = logging.DEBUG if options['debug'] == True else logging.WARN
 
     logging.basicConfig(level=log_level)
@@ -40,7 +40,7 @@ def _init_logger(options: dict):
         f"Logger initialized in mode {logging.getLevelName(log_level)}")
 
 
-def _load_images(config: dict) -> list:
+def __load_images(config: dict) -> list:
     images = []
 
     filepath_ignore_regex = re.compile(r'\.gitkeep')
@@ -66,7 +66,7 @@ def _load_images(config: dict) -> list:
     return images
 
 
-def _move_duplicates(config: dict, duplicates: list) -> None:
+def __move_duplicates(config: dict, duplicates: list) -> None:
     """
     Move images detected as duplicate to a separate dir
 
@@ -82,7 +82,7 @@ def _move_duplicates(config: dict, duplicates: list) -> None:
                     os.path.join(config['paths']['duplicates_dir'], duplicate))
 
 
-def _restore_duplicates(config: dict):
+def __restore_duplicates(config: dict):
     """
     Move duplicates back to the images dir
     """

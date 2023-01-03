@@ -19,20 +19,20 @@ class SiftDuplicateDetector:
     def determine_duplicates(self):
         bfMatcher = cv2.BFMatcher(BF_MATCHES_NORM_TYPE, crossCheck=True)
 
-        self.compute_sift_keypoints_and_descriptors()
+        self.__compute_sift_keypoints_and_descriptors()
 
         for image in self._computed_images.keys():
             filename = os.path.basename(image)
             logging.debug(f"Checking duplicates for {filename}...")
 
-            self.find_duplicates(filename, bfMatcher)
+            self.__find_duplicates(filename, bfMatcher)
 
         if (self._render_comparison_images):
             ImageRenderer(self._duplicates, self._computed_images).render()
 
         return self._duplicates
 
-    def compute_sift_keypoints_and_descriptors(self):
+    def __compute_sift_keypoints_and_descriptors(self):
         sift = cv2.SIFT_create(edgeThreshold=int(
             self._config['edge_threshold']))
 
@@ -48,7 +48,7 @@ class SiftDuplicateDetector:
                 'img': grey_image
             }
 
-    def find_duplicates(self, source_image: str, bfMatcher):
+    def __find_duplicates(self, source_image: str, bfMatcher):
         similar_images = {source_image: {}}
 
         for image in self._computed_images.keys():
@@ -67,9 +67,9 @@ class SiftDuplicateDetector:
             }
 
         if (similar_images[source_image]):
-            self._duplicates[source_image] = self.sort_by_similarity(
+            self._duplicates[source_image] = self.__sort_by_similarity(
                 similar_images[source_image])
 
-    def sort_by_similarity(self, images):
+    def __sort_by_similarity(self, images):
         return {k: v for k, v in sorted(
             images.items(), key=lambda x: len(x[1]['matches']), reverse=True)}
