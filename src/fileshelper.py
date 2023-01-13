@@ -45,7 +45,7 @@ def move_duplicates(config: dict, duplicates: list) -> None:
     os.makedirs(config['paths']['duplicates_dir'], exist_ok=True)
 
     for duplicate in duplicates:
-        __move_file(duplicate, config['paths']['duplicates_dir'])
+        _move_file(duplicate, config['paths']['duplicates_dir'])
 
 
 def delete_duplicates(config: dict, duplicates: list) -> None:
@@ -58,13 +58,12 @@ def delete_duplicates(config: dict, duplicates: list) -> None:
         os.remove(duplicate)
 
 
-def store_new_unique_images(config: dict) -> None:
+def store_new_image(image, config: dict) -> None:
     """
     Move new unique images to the root images dir
     """
-    logging.debug(f"Storing new unique images")
-
-    __move_all_files(config['paths']['new_images_dir'], config['paths']['images_dir'])
+    filename = image
+    _move_file(filename, config['paths']['images_dir'])
 
 
 def restore_duplicates(config: dict):
@@ -73,19 +72,24 @@ def restore_duplicates(config: dict):
     """
     logging.debug(f"Restoring duplicates")
 
-    __move_all_files(config['paths']['duplicates_dir'], config['paths']['new_images_dir'])
+    _move_all_files(config['paths']['duplicates_dir'], config['paths']['new_images_dir'])
 
 
-def __move_all_files(source_dir: str, target_dir: str):
-    if (not os.path.isdir(source_dir) or not os.path.isdir(target_dir)):
+def _move_all_files(source_dir: str, target_dir: str):
+    if (not _check_dir(source_dir) or not _check_dir(target_dir)):
+        logging.warn(f"Moving files from {source_dir} to {target_dir} failed. One of the directories does not exist")
         return
 
     for file in Path(source_dir).iterdir():
         if not file.is_file():
             continue
 
-        __move_file(file.as_posix(), target_dir)
+        _move_file(file.as_posix(), target_dir)
 
 
-def __move_file(fullpath, target_dir):
+def _check_dir(directory):
+    return os.path.isdir(directory)
+
+
+def _move_file(fullpath, target_dir):
     shutil.move(fullpath, os.path.join(target_dir, os.path.basename(fullpath)))

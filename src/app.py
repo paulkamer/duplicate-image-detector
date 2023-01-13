@@ -1,8 +1,10 @@
+import os
 import logging
 from pathlib import Path
 
 from . import fileshelper
 from .detectors import SiftDuplicateDetector
+from .db import dbhandler
 
 
 def app(**options: dict):
@@ -13,15 +15,16 @@ def app(**options: dict):
 
     new_images, existing_images = load_images(config)
 
-    duplicates = SiftDuplicateDetector(new_images,
-                                       existing_images,
-                                       options.get('config')['sift'],
-                                       options.get('render_comparison_images')
-                                       ).detect()
+    detector = SiftDuplicateDetector(new_images,
+                                     existing_images,
+                                     options.get('config')['sift'],
+                                     options.get('render_comparison_images')
+                                     )
+    duplicates = detector.detect()
 
     handle_duplicates(duplicates, config, options.get('remove'))
 
-    handle_new_unique_images(new_images, duplicates, config)
+    save_new_unique_images(new_images, duplicates, detector.get_computed_images(), config)
 
 
 def init_logger(debug: bool):
@@ -50,9 +53,15 @@ def handle_duplicates(duplicates, config, remove_duplicates: bool):
             fileshelper.move_duplicates(config, duplicates.keys())
 
 
-def handle_new_unique_images(new_images, duplicates, config):
+def save_new_unique_images(new_images, duplicates, computed_images, config):
     if (len(new_images) > len(duplicates)):
-        fileshelper.store_new_unique_images(config)
+        logging.debug(f"Storing new unique images")
+
+        for image in new_images:
+            if image not in duplicates:
+                fileshelper.store_new_image(image, config)
+                dbhandler.store_image(os.path.basename(
+                    image), computed_images[image]['kp'], computed_images[image]['ds'])
 
 
 def log_duplicates(duplicates):

@@ -3,6 +3,8 @@ __pycache__/
 images/*
 !images/.gitkeep
 
+images.db
+
 .coverage
 
 venv

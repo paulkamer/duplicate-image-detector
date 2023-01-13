@@ -9,44 +9,47 @@ BF_MATCHES_NORM_TYPE = cv2.NORM_L1
 
 class SiftDuplicateDetector:
     def __init__(self, new_images: dict, existing_images: dict, config: dict, render_comparisons: bool):
-        self.__manager = Manager()
+        self._manager = Manager()
 
-        self.__new_images = new_images
-        self.__existing_images = existing_images
+        self._new_images = new_images
+        self._existing_images = existing_images
 
-        self.__duplicates = self.__manager.dict()
-        self.__computed_images = self.__manager.dict()
+        self._duplicates = self._manager.dict()
+        self._computed_images = self._manager.dict()
 
-        self.__render_comparisons = render_comparisons
-        self.__config = config
+        self._render_comparisons = render_comparisons
+        self._config = config
 
-        self.__descriptor_matcher = cv2.BFMatcher(BF_MATCHES_NORM_TYPE, crossCheck=True)
-        self.__sift = cv2.SIFT_create(edgeThreshold=int(config['edge_threshold']))
+        self._descriptor_matcher = cv2.BFMatcher(BF_MATCHES_NORM_TYPE, crossCheck=True)
+        self._sift = cv2.SIFT_create(edgeThreshold=int(config['edge_threshold']))
 
     def detect(self):
         logging.debug("Running SIFT duplicate detector...")
-        self.__compute_sift_keypoints_and_descriptors()
+        self._compute_sift_keypoints_and_descriptors()
 
-        self.__find_duplicates()
+        self._find_duplicates()
 
-        if (self.__render_comparisons):
-            ImageRenderer(self.__duplicates, computed_images).render()
+        if (self._render_comparisons):
+            ImageRenderer(self._duplicates, computed_images).render()
 
-        return self.__duplicates  # TODO return simple dict/list
+        return self._duplicates  # TODO return simple dict/list
 
-    def __compute_sift_keypoints_and_descriptors(self):
+    def get_computed_images(self):
+        return self._computed_images
+
+    def _compute_sift_keypoints_and_descriptors(self):
         logging.debug("Computing keypoints & descriptors using SIFT...")
 
         processes = []
-        for path in self.__new_images + self.__existing_images:
-            processes.append(Process(target=SiftDuplicateDetector.__compute_image,
-                             args=(self.__sift, self.__computed_images, path)))
+        for path in self._new_images + self._existing_images:
+            processes.append(Process(target=SiftDuplicateDetector._compute_image,
+                             args=(self._sift, self._computed_images, path)))
 
         [p.start() for p in processes]
         [p.join() for p in processes]
 
     @staticmethod
-    def __compute_image(sift, computed_images, path):
+    def _compute_image(sift, computed_images, path):
         logging.debug(f"Computing {path}")
 
         image = cv2.imread(path)
@@ -55,39 +58,39 @@ class SiftDuplicateDetector:
 
         computed_images[path] = {'kp': kp, 'ds': ds, 'img': grey_image}
 
-    def __find_duplicates(self):
+    def _find_duplicates(self):
         logging.debug("Checking for duplicates...")
-        similar_images = self.__manager.dict()
+        similar_images = self._manager.dict()
 
-        for image in self.__new_images:
+        for image in self._new_images:
             filename = image
 
-            self.__find_duplicate_for_image(filename, similar_images)
+            self._find_duplicate_for_image(filename, similar_images)
 
             if (similar_images[filename]):
-                self.__duplicates[filename] = self.__sort_duplicates(similar_images[filename])
+                self._duplicates[filename] = self._sort_duplicates(similar_images[filename])
 
-    def __find_duplicate_for_image(self, source_image: str, similar_images: dict):
+    def _find_duplicate_for_image(self, source_image: str, similar_images: dict):
         logging.debug(f"Checking duplicates for {source_image}...")
 
         similar_images.update({source_image: {}})
 
-        min_matches = int(self.__config['duplicate_descriptor_matches_threshold'])
+        min_matches = int(self._config['duplicate_descriptor_matches_threshold'])
 
         processes = []
-        for image in self.__existing_images:
+        for image in self._existing_images:
             filename = image
 
             processes.append(
-                Process(target=SiftDuplicateDetector.__find_matches, args=(self.__descriptor_matcher, min_matches,
-                        self.__computed_images, similar_images, source_image, filename))
+                Process(target=SiftDuplicateDetector._find_matches, args=(self._descriptor_matcher, min_matches,
+                        self._computed_images, similar_images, source_image, filename))
             )
 
         [p.start() for p in processes]
         [p.join() for p in processes]
 
     @staticmethod
-    def __find_matches(matcher, min_matches, computed_images, similar_images, source_image, filename):
+    def _find_matches(matcher, min_matches, computed_images, similar_images, source_image, filename):
         descriptor_matches = matcher.match(computed_images[source_image]['ds'], computed_images[filename]['ds'])
 
         # Discard if image is not similar enough
@@ -104,7 +107,7 @@ class SiftDuplicateDetector:
             }
         )
 
-    def __sort_duplicates(self, images):
+    def _sort_duplicates(self, images):
         """
         Sort duplicate images on number of descriptor matches
         """
