@@ -1,50 +1,46 @@
 import sqlite3
 import json
-DATABASE = "images.db"
+from ..metaclasses.singleton import Singleton
+from ..image import Image
 
 
-def fetch_images():
-    con = sqlite3.connect(DATABASE)
-    cur = con.cursor()
+class DbHandler:
+    def __init__(self, config: dict, metaclass=Singleton):
+        self._config = config
+        self._con = sqlite3.connect(config['db']['database_path'])
 
-    res = cur.execute("SELECT * FROM images")
-    results = res.fetchall()
+        self._init_db()
 
+    def fetch_images(self):
+        cur = self._con.cursor()
 
-def store_image(filename: str, sift_keypoints: list, sift_descriptors: list):
-    con = sqlite3.connect(DATABASE)
-    cur = con.cursor()
+        res = cur.execute("SELECT * FROM images")
+        results = res.fetchall()
+        cur.close()
 
-    keypoints = [{
-        'pt': k.pt,
-        'size': k.size,
-        'angle': k.angle,
-        'response': k.response,
-        'octave': k.octave,
-        'class_id': k.class_id,
-    } for k in sift_keypoints]
+        return results
 
-    cur.execute("""
-                INSERT INTO images (filename, sift_keypoints, sift_descriptors)
-                VALUES (?,?, ?)
-                """, (filename, json.dumps(keypoints), json.dumps(sift_descriptors.tolist())))
+    def store_image(self, image: Image):
+        cur = self._con.cursor()
 
-    con.commit()
+        cur.execute("INSERT INTO images (filename, metadata) VALUES (?,?)",
+                    (image.filename, json.dumps(image.metadata)))
 
-    con.close()
+        self._con.commit()
+        cur.close()
 
+    def _init_db(self):
+        cur = self._con.cursor()
 
-def init_db():
-    con = sqlite3.connect(DATABASE)
-    cur = con.cursor()
+        cur.execute("""
+                    CREATE TABLE IF NOT EXISTS images (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                        filename TEXT NOT NULL UNIQUE, 
+                        metadata TEXT
+                    )
+                    """)
 
-    cur.execute("""
-                CREATE TABLE IF NOT EXISTS images (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT, 
-                    filename TEXT NOT NULL UNIQUE, 
-                    sift_keypoints TEXT, 
-                    sift_descriptors TEXT
-                )
-                """)
+        cur.close()
 
-    con.close()
+    def __del__(self):
+        self._con.close()

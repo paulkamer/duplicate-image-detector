@@ -1,1 +1,1 @@
-from .dbhandler import *
+from .dbhandler import DbHandler

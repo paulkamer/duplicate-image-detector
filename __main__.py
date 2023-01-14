@@ -40,8 +40,8 @@ if __name__ == "__main__":
     options = {
         'debug': args.debug,
         'render_comparison_images': args.render,
-        'restore': args.restore,
-        'remove': args.remove,
+        'restore_duplicates': args.restore,
+        'remove_duplicates': args.remove,
         'config': config,
     }
 

@@ -3,25 +3,26 @@ import copyreg
 import logging
 from multiprocessing import Process, Manager
 from .compare_image_renderers.sift import SiftCompareImageRenderer as ImageRenderer
+from ..image import Image
 
 BF_MATCHES_NORM_TYPE = cv2.NORM_L1
 
 
 class SiftDuplicateDetector:
-    def __init__(self, new_images: dict, existing_images: dict, config: dict, render_comparisons: bool):
+    def __init__(self, images: dict[str, list[Image]], options: dict):
         self._manager = Manager()
 
-        self._new_images = new_images
-        self._existing_images = existing_images
+        self._new_images = images['new']
+        self._existing_images = images['existing']
 
         self._duplicates = self._manager.dict()
         self._computed_images = self._manager.dict()
 
-        self._render_comparisons = render_comparisons
-        self._config = config
+        self._render_comparisons = options.get('render_comparison_images')
+        self._config = options.get('config')['sift']
 
         self._descriptor_matcher = cv2.BFMatcher(BF_MATCHES_NORM_TYPE, crossCheck=True)
-        self._sift = cv2.SIFT_create(edgeThreshold=int(config['edge_threshold']))
+        self._sift = cv2.SIFT_create(edgeThreshold=int(self._config['edge_threshold']))
 
     def detect(self):
         logging.debug("Running SIFT duplicate detector...")

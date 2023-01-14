@@ -6,90 +6,87 @@ import re
 from pathlib import Path
 
 
-def load_images(images_dir: str, config: dict) -> list:
-    images = []
+class FilesHelper:
+    def __init__(self, config: dict):
+        self.config = config
 
-    filepath_ignore_regex = re.compile(r'\.gitkeep')
-    for file in Path(images_dir).iterdir():
-        if not file.is_file():
-            continue
+    def load_images(self, images_dir: str) -> list:
+        images = []
 
-        path = file.as_posix()
+        filepath_ignore_regex = re.compile(r'\.gitkeep')
+        for file in Path(images_dir).iterdir():
+            if not file.is_file():
+                continue
 
-        if re.search(filepath_ignore_regex, path):
-            continue
+            path = file.as_posix()
 
-        # Check if it's a supported image
-        filetype = imghdr.what(path)
-        logging.debug(f"{path} - {filetype}")
-        if (filetype not in config['files']['supported_image_types'].split(',')):
-            logging.info('Unsupported file type: ' + str(filetype))
-            continue
+            if re.search(filepath_ignore_regex, path):
+                continue
 
-        images.append(path)
+            # Check if it's a supported image
+            filetype = imghdr.what(path)
+            logging.debug(f"{path} - {filetype}")
+            if (filetype not in self.config['files']['supported_image_types'].split(',')):
+                logging.info('Unsupported file type: ' + str(filetype))
+                continue
 
-    return images
+            images.append(path)
 
+        return images
 
-def move_duplicates(config: dict, duplicates: list) -> None:
-    """
-    Move images detected as duplicate to a separate dir
+    def move_duplicates(self, files: list) -> None:
+        """
+        Move images detected as duplicate to a separate dir
 
-    Parameters
-    ----------
-    duplicates : list
-        Duplicate images that should be moved to the duplicates dir
-    """
-    logging.debug(f"Moving duplicates")
+        Parameters
+        ----------
+        duplicates : list
+            Duplicate images that should be moved to the duplicates dir
+        """
+        logging.debug(f"Moving duplicates")
 
-    os.makedirs(config['paths']['duplicates_dir'], exist_ok=True)
+        os.makedirs(self.config['paths']['duplicates_dir'], exist_ok=True)
 
-    for duplicate in duplicates:
-        _move_file(duplicate, config['paths']['duplicates_dir'])
+        for file in files:
+            self._move_file(file, self.config['paths']['duplicates_dir'])
 
+    def delete_duplicates(self, files: list) -> None:
+        """
+        Delete new images detected as a duplicate
+        """
+        logging.debug(f"Deleting duplicates")
 
-def delete_duplicates(config: dict, duplicates: list) -> None:
-    """
-    Delete new images detected as a duplicate
-    """
-    logging.debug(f"Deleting duplicates")
+        for file in files:
+            os.remove(file)
 
-    for duplicate in duplicates:
-        os.remove(duplicate)
+    def store_new_image(self, file) -> None:
+        """
+        Move new unique images to the root images dir
+        """
+        self._move_file(file, self.config['paths']['images_dir'])
 
+    def restore_duplicates(self):
+        """
+        Move duplicates back to the new images dir
+        """
+        logging.debug(f"Restoring duplicates")
 
-def store_new_image(image, config: dict) -> None:
-    """
-    Move new unique images to the root images dir
-    """
-    filename = image
-    _move_file(filename, config['paths']['images_dir'])
+        self._move_all_files(self.config['paths']['duplicates_dir'], self.config['paths']['new_images_dir'])
 
+    def _move_all_files(self, source_dir: str, target_dir: str):
+        if (not self._check_dir(source_dir) or not self._check_dir(target_dir)):
+            logging.warn(
+                f"Moving files from {source_dir} to {target_dir} failed. One of the directories does not exist")
+            return
 
-def restore_duplicates(config: dict):
-    """
-    Move duplicates back to the new images dir
-    """
-    logging.debug(f"Restoring duplicates")
+        for file in Path(source_dir).iterdir():
+            if not file.is_file():
+                continue
 
-    _move_all_files(config['paths']['duplicates_dir'], config['paths']['new_images_dir'])
+            self._move_file(file.as_posix(), target_dir)
 
+    def _check_dir(self, directory):
+        return os.path.isdir(directory)
 
-def _move_all_files(source_dir: str, target_dir: str):
-    if (not _check_dir(source_dir) or not _check_dir(target_dir)):
-        logging.warn(f"Moving files from {source_dir} to {target_dir} failed. One of the directories does not exist")
-        return
-
-    for file in Path(source_dir).iterdir():
-        if not file.is_file():
-            continue
-
-        _move_file(file.as_posix(), target_dir)
-
-
-def _check_dir(directory):
-    return os.path.isdir(directory)
-
-
-def _move_file(fullpath, target_dir):
-    shutil.move(fullpath, os.path.join(target_dir, os.path.basename(fullpath)))
+    def _move_file(self, fullpath, target_dir):
+        shutil.move(fullpath, os.path.join(target_dir, os.path.basename(fullpath)))

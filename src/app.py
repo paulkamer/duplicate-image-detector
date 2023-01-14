@@ -1,30 +1,36 @@
-import os
 import logging
-from pathlib import Path
 
-from . import fileshelper
+from .db import DbHandler
+from .fileshelper import FilesHelper
+from .imageloader import ImageLoader
 from .detectors import SiftDuplicateDetector
-from .db import dbhandler
+from .duplicateshandler import DuplicatesHandler
+from .new_unique_images_handler import NewUniqueImagesHandler
 
 
 def app(**options: dict):
-    config = options.get('config')
     init_logger(options.get('debug'))
 
-    options.get('restore') and fileshelper.restore_duplicates(config)
+    config = options.get('config')
+    dbhandler = DbHandler(config)
+    fileshelper = FilesHelper(config)
 
-    new_images, existing_images = load_images(config)
+    options.get('restore_duplicates') and fileshelper.restore_duplicates()
 
-    detector = SiftDuplicateDetector(new_images,
-                                     existing_images,
-                                     options.get('config')['sift'],
-                                     options.get('render_comparison_images')
-                                     )
+    new_images, existing_images = ImageLoader(fileshelper, config).load_images()
+    images = {
+        'new': new_images,
+        'existing': existing_images
+    }
+
+    detector = SiftDuplicateDetector(images, options)
     duplicates = detector.detect()
 
-    handle_duplicates(duplicates, config, options.get('remove'))
+    DuplicatesHandler(fileshelper, options).handle(duplicates)
 
-    save_new_unique_images(new_images, duplicates, detector.get_computed_images(), config)
+    new_unique_images = [image for image in new_images if image not in duplicates]
+    if (new_unique_images):
+        NewUniqueImagesHandler(fileshelper, dbhandler, config).handle(new_unique_images, detector.get_computed_images())
 
 
 def init_logger(debug: bool):
@@ -32,41 +38,3 @@ def init_logger(debug: bool):
 
     logging.basicConfig(level=log_level)
     logging.debug(f"Logger initialized in mode {logging.getLevelName(log_level)}")
-
-
-def load_images(config):
-    new_images = fileshelper.load_images(config['paths']['new_images_dir'], config)
-    existing_images = fileshelper.load_images(config['paths']['images_dir'], config)
-
-    return new_images, existing_images
-
-
-def handle_duplicates(duplicates, config, remove_duplicates: bool):
-    logging.info(f"Duplicates found: {len(duplicates)}")
-
-    if (duplicates):
-        log_duplicates(duplicates)
-
-        if (remove_duplicates):
-            fileshelper.delete_duplicates(config, duplicates.keys())
-        else:
-            fileshelper.move_duplicates(config, duplicates.keys())
-
-
-def save_new_unique_images(new_images, duplicates, computed_images, config):
-    if (len(new_images) > len(duplicates)):
-        logging.debug(f"Storing new unique images")
-
-        for image in new_images:
-            if image not in duplicates:
-                fileshelper.store_new_image(image, config)
-                dbhandler.store_image(os.path.basename(
-                    image), computed_images[image]['kp'], computed_images[image]['ds'])
-
-
-def log_duplicates(duplicates):
-    for key in duplicates:
-        logging.info(key)
-        for duplicate in duplicates[key]:
-            logging.info(
-                f"\t- {duplicate} - {len(duplicates[key][duplicate]['matches'])} matched descriptors")
