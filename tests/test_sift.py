@@ -9,25 +9,26 @@ class TestSift(unittest.TestCase):
         config = ConfigParser()
         config.read('./config.ini')
 
-        images = load_images(config)
+        images = {
+            'new': load_images(config['unittests']['fixtures_dir'] + "/new"),
+            'existing': load_images(config['unittests']['fixtures_dir'] + "/store")
+        }
 
         expected = {
-            'bmw.jpg',
-            'bmw2_scaled_down.jpg',
-            'bmw3.jpg',
+            'tests/fixtures/new/bmw3.jpg',
+            'tests/fixtures/new/bmw2_scaled_down.jpg',
         }
 
         options = {'config': config}
-        result = SiftDuplicateDetector(
-            images=images, **options).detect()
+        result = SiftDuplicateDetector(images=images, options=options).detect()
 
         self.assertSetEqual(set(result), expected)
 
 
-def load_images(config: ConfigParser) -> list:
+def load_images(path: str) -> list:
     images = []
 
-    for file in Path(config['unittests']['fixtures_dir']).iterdir():
+    for file in Path(path).iterdir():
         if not file.is_file():
             continue
 

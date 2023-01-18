@@ -117,7 +117,7 @@ class SiftDuplicateDetector:
 
 def _pickle_keypoints(point):
     """
-    Ensure v2.KeyPoint objects can be pickled. https://stackoverflow.com/a/48832618
+    Ensure cv2.KeyPoint objects can be pickled. https://stackoverflow.com/a/48832618
     """
     return cv2.KeyPoint, (*point.pt, point.size, point.angle, point.response, point.octave, point.class_id)
 

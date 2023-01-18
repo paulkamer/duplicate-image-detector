@@ -13,7 +13,7 @@ class NewUniqueImagesHandler:
         self.dbhandler = dbhandler
         self.config = config
 
-    def handle(self, images, computed_images):
+    def handle(self, images: list[str], computed_images: dict):
         logging.debug(f"Storing new unique images")
 
         for filename in images:
@@ -21,11 +21,11 @@ class NewUniqueImagesHandler:
 
             metadata = self._format_metadata(filename, computed_images)
 
-            imgage = Image(os.path.basename(filename), metadata)
+            image = Image(os.path.basename(filename), metadata)
 
-            self.dbhandler.store_image(imgage)
+            self.dbhandler.store_image(image)
 
-    def _format_metadata(self, image, computed_images) -> Image:
+    def _format_metadata(self, image: str, computed_images: dict) -> Image:
         keypoints = [{
             'pt': k.pt,
             'size': k.size,

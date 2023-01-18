@@ -59,7 +59,7 @@ class FilesHelper:
         for file in files:
             os.remove(file)
 
-    def store_new_image(self, file) -> None:
+    def store_new_image(self, file: str) -> None:
         """
         Move new unique images to the root images dir
         """
@@ -85,8 +85,8 @@ class FilesHelper:
 
             self._move_file(file.as_posix(), target_dir)
 
-    def _check_dir(self, directory):
+    def _check_dir(self, directory: str):
         return os.path.isdir(directory)
 
-    def _move_file(self, fullpath, target_dir):
+    def _move_file(self, fullpath: str, target_dir: str):
         shutil.move(fullpath, os.path.join(target_dir, os.path.basename(fullpath)))

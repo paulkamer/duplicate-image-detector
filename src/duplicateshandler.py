@@ -10,13 +10,15 @@ class DuplicatesHandler:
     def handle(self, duplicates: dict):
         logging.info(f"Duplicates found: {len(duplicates)}")
 
-        if (duplicates):
-            self._log_duplicates(duplicates)
+        if (not duplicates):
+            return
 
-            if (self.options.get('remove_duplicates')):
-                self.fileshelper.delete_duplicates(duplicates.keys())
-            else:
-                self.fileshelper.move_duplicates(duplicates.keys())
+        self._log_duplicates(duplicates)
+
+        if (self.options.get('remove_duplicates')):
+            self.fileshelper.delete_duplicates(duplicates.keys())
+        else:
+            self.fileshelper.move_duplicates(duplicates.keys())
 
     def _log_duplicates(self, duplicates: dict):
         for key in duplicates:
