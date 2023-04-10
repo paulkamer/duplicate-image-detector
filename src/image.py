@@ -1,5 +1,5 @@
 class Image:
-    def __init__(self, filename: str, metadata: dict):
+    def __init__(self, filename: str, metadata: dict = None):
         self.filename = filename
         self.metadata = metadata
 

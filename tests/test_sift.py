@@ -2,6 +2,7 @@ import unittest
 from configparser import ConfigParser
 from pathlib import Path
 from src.detectors.sift import SiftDuplicateDetector
+from src.image import Image
 
 
 class TestSift(unittest.TestCase):
@@ -20,7 +21,10 @@ class TestSift(unittest.TestCase):
         }
 
         options = {'config': config}
-        result = SiftDuplicateDetector(images=images, options=options).detect()
+        sut = SiftDuplicateDetector(images=images, options=options)
+        sut.detect()
+
+        result = sut.get_duplicates()
 
         self.assertSetEqual(set(result), expected)
 
@@ -32,6 +36,6 @@ def load_images(path: str) -> list:
         if not file.is_file():
             continue
 
-        images.append(file.as_posix())
+        images.append(Image(file.as_posix()))
 
     return images

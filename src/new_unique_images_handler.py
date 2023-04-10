@@ -5,37 +5,25 @@ import logging
 from .db import DbHandler
 from .image import Image
 from .fileshelper import FilesHelper
+from .image_mapper import ImageMapper
 
 
 class NewUniqueImagesHandler:
-    def __init__(self, fileshelper: FilesHelper, dbhandler: DbHandler, config: dict):
+    def __init__(self, fileshelper: FilesHelper, imagemapper: ImageMapper, dbhandler: DbHandler):
         self.fileshelper = fileshelper
+        self.imagemapper = imagemapper
         self.dbhandler = dbhandler
-        self.config = config
 
-    def handle(self, images: list[str], computed_images: dict):
+    def handle(self, images: list[Image], computed_images: dict):
         logging.debug(f"Storing new unique images")
 
-        for filename in images:
-            self.fileshelper.store_new_image(filename)
+        for image in images:
+            dest = self.fileshelper.store_new_image(image.filename)
 
-            metadata = self._format_metadata(filename, computed_images)
+            img = self.imagemapper.serialize(
+                dest,
+                computed_images[image.filename]['kp'],
+                computed_images[image.filename]['ds'].tolist()  # todo remove .tolist() here
+            )
 
-            image = Image(os.path.basename(filename), metadata)
-
-            self.dbhandler.store_image(image)
-
-    def _format_metadata(self, image: str, computed_images: dict) -> Image:
-        keypoints = [{
-            'pt': k.pt,
-            'size': k.size,
-            'angle': k.angle,
-            'response': k.response,
-            'octave': k.octave,
-            'class_id': k.class_id,
-        } for k in computed_images[image]['kp']]
-
-        return {
-            'keypoints': json.dumps(keypoints),
-            'descriptors': json.dumps(computed_images[image]['ds'].tolist())
-        }
+            self.dbhandler.store_image(img)

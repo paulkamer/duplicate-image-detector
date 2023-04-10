@@ -14,7 +14,7 @@ class DbHandler:
     def fetch_images(self):
         cur = self._con.cursor()
 
-        res = cur.execute("SELECT * FROM images")
+        res = cur.execute("SELECT filename, metadata FROM images")
         results = res.fetchall()
         cur.close()
 
