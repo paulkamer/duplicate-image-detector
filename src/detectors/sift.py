@@ -28,50 +28,74 @@ class SiftDuplicateDetector:
         logging.debug("Running SIFT duplicate detector...")
         self._compute_sift_keypoints_and_descriptors()
 
-        self._find_duplicates()
+        similar_images = self._manager.dict()
+        self._find_duplicates_in_new_images(similar_images)
+        self._find_similar_images_in_existing_images(similar_images)
 
         if (self._render_comparisons):
-            ImageRenderer(self._duplicates, computed_images).render()
-
-        return self._duplicates  # TODO return simple dict/list
+            ImageRenderer(self._duplicates, self._computed_images).render()
 
     def get_computed_images(self):
         return self._computed_images
+
+    def get_duplicates(self):
+        return self._duplicates
 
     def _compute_sift_keypoints_and_descriptors(self):
         logging.debug("Computing keypoints & descriptors using SIFT...")
 
         processes = []
-        for path in self._new_images + self._existing_images:
+        for image in self._new_images + self._existing_images:
             processes.append(Process(target=SiftDuplicateDetector._compute_image,
-                             args=(self._sift, self._computed_images, path)))
+                             args=(self._sift, self._computed_images, image)))
 
         [p.start() for p in processes]
         [p.join() for p in processes]
 
     @staticmethod
-    def _compute_image(sift, computed_images, path):
+    def _compute_image(sift, computed_images: dict, image: Image):
+        path = image.filename
         logging.debug(f"Computing {path}")
 
-        image = cv2.imread(path)
-        grey_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        kp, ds = sift.detectAndCompute(grey_image, None)
+        img = cv2.imread(path)
+        grey_image = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+        kp = None
+        ds = None
+        if (image.metadata):
+            logging.debug('Relying on cached metadata')
+
+            kp = image.metadata['keypoints']
+            ds = image.metadata['descriptors']
+
+        else:
+            kp, ds = sift.detectAndCompute(grey_image, None)
 
         computed_images[path] = {'kp': kp, 'ds': ds, 'img': grey_image}
 
-    def _find_duplicates(self):
-        logging.debug("Checking for duplicates...")
-        similar_images = self._manager.dict()
+    def _find_duplicates_in_new_images(self, similar_images: dict):
+        logging.debug("Checking for duplicates in new images...")
 
+        self._find_duplicates(self._new_images, similar_images)
+
+    def _find_similar_images_in_existing_images(self, similar_images: dict):
+        logging.debug("Chking for similar images in existing images collection...")
+
+        self._find_duplicates(self._existing_images, similar_images)
+
+    def _find_duplicates(self, images: list[Image], similar_images: dict):
+        logging.debug("Checking for duplicates in new images...")
+
+        # Check if new_images list contains duplicates first
         for image in self._new_images:
-            filename = image
+            filename = image.filename
 
-            self._find_duplicate_for_image(filename, similar_images)
+            self._find_duplicate_for_image(filename, images, similar_images)
 
             if (similar_images[filename]):
                 self._duplicates[filename] = self._sort_duplicates(similar_images[filename])
 
-    def _find_duplicate_for_image(self, source_image: str, similar_images: dict):
+    def _find_duplicate_for_image(self, source_image: str, images: list[Image], similar_images: dict):
         logging.debug(f"Checking duplicates for {source_image}...")
 
         similar_images.update({source_image: {}})
@@ -79,8 +103,11 @@ class SiftDuplicateDetector:
         min_matches = int(self._config['duplicate_descriptor_matches_threshold'])
 
         processes = []
-        for image in self._existing_images:
-            filename = image
+        for image in images:
+            filename = image.filename
+
+            if source_image == filename:
+                continue
 
             processes.append(
                 Process(target=SiftDuplicateDetector._find_matches, args=(self._descriptor_matcher, min_matches,
