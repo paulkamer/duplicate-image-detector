@@ -12,7 +12,10 @@ class ImageLoader:
         self.config = config
 
     def load_images(self) -> list:
-        return self._load_images(self.config['paths']['new_images_dir']), self._load_existing_images()
+        return self._load_new_images(), self._load_existing_images()
+
+    def _load_new_images(self):
+        return self._load_images(self.config['paths']['new_images_dir'])
 
     def _load_images(self, path: str):
         images = self.fileshelper.load_images(path)

@@ -153,7 +153,7 @@ def _pickle_dmatch(dmatch):
     """
     Ensure cv2.DMatch objects can be pickled
     """
-    return cv2.DMatch, (dmatch.imgIdx, dmatch.queryIdx, dmatch.trainIdx)
+    return cv2.DMatch, (dmatch.queryIdx,  dmatch.trainIdx, dmatch.imgIdx, dmatch.distance)
 
 
 copyreg.pickle(cv2.KeyPoint().__class__, _pickle_keypoints)
